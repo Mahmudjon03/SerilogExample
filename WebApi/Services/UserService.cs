@@ -1,92 +1,120 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Data;
+using Domain.Enums;
+using Domain.Exceptions;
+using Microsoft.OpenApi.Models;
+using System.Data;
+using System.Data.SqlClient;
 using WebApi.Model;
+using static Data.DataContext;
 
 namespace WebApi.Services
 {
-    public class UserService : IUserService
+    public class UserService : DataContext, IUserService
     {
-  
-        private readonly Serilog.ILogger _log;
+
+
         public List<User> _ListUser = new List<User>();
-        public UserService(Serilog.ILogger log)
+
+
+
+        public bool AddUser(User user)
         {
-          
-            _log = log;
-        }
-        public UserService()
-        {
-            
+            string sql = "insert into Employee  values(@fname,@lname);";
+
+            SqlParameter[] sqlParameter = new SqlParameter[]
+            {
+                new SqlParameter("@fname", user.FName),
+                new SqlParameter("@lname", user.LName),
+            };
+
+            var sqlObjects = Exec(sql, sqlParameter, TypeReturn.SqlDataReader, TypeCommand.SqlQuery);
+            sqlObjects.Dispose();
+
+            return true;
         }
 
-        public async Task<bool> AddUser(User model)
+        public bool Delete(int id)
         {
-            if (model == null)
+            string sql = "delete from Employee  where id  = @Id";
+
+            SqlParameter[] sqlParameter = new SqlParameter[]
+          {     new SqlParameter("@Id",id),
+
+          };
+
+            var sqlObjects = Exec(sql, sqlParameter, TypeReturn.SqlDataReader, TypeCommand.SqlQuery);
+            sqlObjects.Dispose();
+
+            return true;
+        }
+
+        public User GetById(int id)
+        {
+            string sql = "select * from Employee where Id = @id";
+
+            SqlParameter[] sqlParameter = new SqlParameter[]
             {
-                _log.Error("!AddUser!  User is null?");
-              return false;
+                new SqlParameter("@id", id)
+            };
+
+
+            using (SqlObjects sqlObjects = Exec(sql, sqlParameter, TypeReturn.SqlDataReader, TypeCommand.SqlQuery))
+            {
+                SqlDataReader dataReader = sqlObjects.Reader;
+                if (dataReader.HasRows)
+                {
+                    var result = new User();
+
+                    dataReader.Read();
+                    result.Id = dataReader.GetInt32(0);
+                    result.FName = dataReader.GetString(1);
+                    result.LName = dataReader.GetString(2);
+
+                    return result;
+                }
+
+                throw new ShukrMoliyaException("Employee not found");
+            }
+        }
+
+        public List<User> GetUsers()
+        {
+            string sql = "select * from Employee";
+            var result = new List<User>();
+            using (SqlObjects sqlObject = Exec(sql, new SqlParameter[] { }, TypeReturn.DataTable, TypeCommand.SqlQuery))
+            {
+                DataTable dataTable = sqlObject.DataTable;
+                if (dataTable.Columns.Count > 0)
+                {
+                    result = (from DataRow dataRow in dataTable.Rows
+                              select new User()
+                              {
+                                  Id = (int)dataRow["Id"],
+                                  FName = dataRow["fname"].ToString(),
+                                  LName = dataRow["lname"].ToString()
+                              }).ToList();
+                 }
+
             }
 
-            _ListUser.Add(model);
-            _log.Information($"{model.FullName} Added !");
+            return result;
+        }
+
+        public bool Update(User user)
+        {
+            string sql = "update  Employee set fname = @fname, lname =lname  where Id =@Id";
            
-            return await Task.FromResult(true);
+            SqlParameter[] sqlParameter = new SqlParameter[]
+            {  
+                new SqlParameter("@Id", user.Id),
+                new SqlParameter("@fname", user.FName),
+                new SqlParameter("@lname", user.LName),
+            };
+
+            var sqlObjects = Exec(sql, sqlParameter, TypeReturn.SqlDataReader, TypeCommand.SqlQuery);
+            sqlObjects.Dispose();
+
+            return true;
         }
-
-        public async Task<User> DeleteUser(int id)
-        {
-           var deleteUser = _ListUser.Find(x => x.Id == id);    
-            if (deleteUser == null) {
-               _log.Error("User not found?");
-               throw new ArgumentNullException("model");
-            }
-          
-            _ListUser.Remove(deleteUser);
-            _log.Information($"Delete user {deleteUser.FullName}");
-           
-            return await Task.FromResult(deleteUser);
-        }
-
-        public async Task<User> GetById(int id)
-        {
-            var user = _ListUser.Find(user=>user.Id==id);
-            if (user == null)
-            {
-                _log.Error("User not found?");
-                return await Task.FromResult(new User());
-            }
-
-            _log.Information($"{user.FullName} Get By Id Function works");
-            return await Task.FromResult(user);
-        }
-
-       
-
-        public async Task<List<User>> GetUsers()
-        {
-            if (_ListUser.Count == 0)
-            {
-                _log.Error("!GetUsers! Users not found?");
-                throw new ArgumentNullException("user not found");
-            }
-
-            _log.Information($"Get Users Function works");
-            return await Task.FromResult(_ListUser.ToList());
-
-        }
-
-        public async Task<User> UpdateUser(User model)
-        {
-            var user = _ListUser.Find(user=>user.Id == model.Id);
-            if (user == null)
-            {
-               _log.Error("User not found?");
-               throw new ArgumentNullException("user not found");
-            }
-            _log.Information($"Updated user is {user.FullName} to {model.FullName}");
-            user.FullName = model.FullName;
-            user.Age= model.Age;
-            return await Task.FromResult(model);
-        }
-
     }
 }

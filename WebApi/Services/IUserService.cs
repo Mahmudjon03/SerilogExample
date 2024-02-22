@@ -4,11 +4,12 @@ namespace WebApi.Services
 {
     public interface IUserService
     {
-        Task<List<User>> GetUsers();
-        Task<bool> AddUser(User model);
-        Task<User> UpdateUser(User model);
-        Task<User> DeleteUser(int id);
-        Task<User> GetById(int id);
+        List<User> GetUsers();
+        bool AddUser(User user);
+        User GetById(int id);
+        bool Update(User user); 
+        bool Delete(int id);
+       
       
     }
 

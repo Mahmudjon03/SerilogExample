@@ -16,24 +16,17 @@ namespace WebApi.Controllers
         }
 
         [HttpGet("GetUsers")]
-        public async Task<List<User>> GetUser() =>  await _userService.GetUsers();
-            
-        
-        [HttpPost("PostUser")]
-        public async Task<bool> PostUser(User user)
-        {
-           
-                return  await _userService.AddUser(user);
-        }
-                  [HttpDelete("DeleteUser")]
-            public async Task<User> DeleteUser(int id) => await _userService.DeleteUser(id);
+        public  List<User> GetUser() =>   _userService.GetUsers();
 
-        [HttpPut("UpdateUser")]
-        public async Task<User> UpdateUser(User model) => await _userService.UpdateUser( model);
-      
-        [HttpGet("GetById")]
-        public async Task<User> GetbyId(int id) => await _userService.GetById(id);
+        [HttpPost("Post")]
+        public bool PostUser(User user) => _userService.AddUser(user);
 
-        
+        [HttpGet("GEtById")]
+        public User GetById(int id ) => _userService.GetById(id);
+        [HttpDelete("delete")]
+        public bool Delete(int id) => _userService.Delete(id);
+        [HttpPut("Update")]
+        public bool Update(User model) => _userService.Update(model);
+   
     }
 }
